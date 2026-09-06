@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Storage</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ===================== AUTH SCREEN ===================== -->
+<div id="authScreen">
+      <div class="auth-card">
+    <h1>☁️ Cloud Storage</h1>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="showTab('login')">Login</button>
+      <button class="auth-tab" onclick="showTab('register')">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+      <input type="email" id="loginEmail" placeholder="Email" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <button class="btn-primary" onclick="doLogin()">Login</button>
+      <p id="loginMsg" class="auth-msg"></p>
+      <div class="auth-divider"><span>or</span></div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" width="18" height="18" />
+        Continue with Google
+      </button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerForm" style="display:none;">
+      <input type="text" id="regName" placeholder="Full Name" />
+      <input type="email" id="regEmail" placeholder="Email" />
+      <input type="password" id="regPassword" placeholder="Password (min 6 chars)" />
+      <button class="btn-primary" onclick="doRegister()">Create Account</button>
+      <p id="registerMsg" class="auth-msg"></p>
+      <div class="auth-divider"><span>or</span></div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" width="18" height="18" />
+        Continue with Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MAIN APP ===================== -->
+<div id="appScreen" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">☁️ Drive</div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item active" onclick="switchView('myDrive')" id="nav-myDrive">
+        <span>🏠</span> My Drive
+      </a>
+      <a class="nav-item" onclick="switchView('starred')" id="nav-starred">
+        <span>⭐</span> Starred
+      </a>
+      <a class="nav-item" onclick="switchView('shared')" id="nav-shared">
+        <span>👥</span> Shared
+      </a>
+      <a class="nav-item" onclick="switchView('trash')" id="nav-trash">
+        <span>🗑️</span> Trash
+        <span id="trashBadge" class="badge">0</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-storage">
+      <div class="storage-label">
+        <span id="sidebarStorage">0 Bytes</span>
+        <span>/ 100 MB</span>
+      </div>
+      <div class="storage-bar">
+        <div id="sidebarProgress" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-user">
+      <span id="sidebarUserName">User</span>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- ── MY DRIVE VIEW ── -->
+    <div id="view-myDrive">
+
+      <!-- TOP BAR -->
+      <div class="topbar">
+        <div id="breadcrumb" class="breadcrumb">🏠 My Drive</div>
+        <div class="topbar-actions">
+          <div class="search-wrap">
+            <input type="text" id="searchInput" placeholder="🔍 Search…"
+                   onkeydown="if(event.key==='Enter') searchFiles()" />
+            <button onclick="searchFiles()">Search</button>
+            <button class="btn-secondary" onclick="clearSearch()">✖</button>
+          </div>
+          <button id="backBtn" class="btn-secondary" onclick="goBack()">← Back</button>
+          <button onclick="refreshAll()">🔄</button>
+        </div>
+      </div>
+
+      <!-- UPLOAD + CREATE ROW -->
+      <div class="action-bar">
+        <!-- Drag & Drop zone -->
+        <div id="dropZone" class="drop-zone"
+             ondragover="event.preventDefault(); this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleDrop(event)">
+          <span>📤 Drag & drop files here, or</span>
+          <label class="btn-primary btn-sm">
+            Browse
+            <input type="file" id="fileInput" multiple style="display:none"
+                   onchange="uploadSelectedFiles(this.files)" />
+          </label>
+        </div>
+
+        <div class="create-folder-row">
+          <input type="text" id="folderName" placeholder="New folder name" />
+          <button class="btn-primary" onclick="createFolder()">📁 Create Folder</button>
+        </div>
+      </div>
+
+      <!-- UPLOAD PROGRESS -->
+      <div id="uploadProgress" style="display:none;" class="upload-progress">
+        <div id="uploadBar" class="upload-bar"></div>
+        <span id="uploadLabel">Uploading…</span>
+      </div>
+
+      <p id="actionMsg" class="action-msg"></p>
+
+      <!-- SORT BAR -->
+      <div class="sort-bar">
+        <span>Sort:</span>
+        <select id="sortSelect" onchange="sortFiles()">
+          <option value="name">Name</option>
+          <option value="type">Type</option>
+          <option value="size">Size</option>
+        </select>
+        <span id="searchMessage" class="search-msg"></span>
+      </div>
+
+      <!-- FILE LIST -->
+      <ul id="fileList" class="file-list"></ul>
+    </div>
+
+    <!-- ── STARRED VIEW ── -->
+    <div id="view-starred" style="display:none;">
+      <div class="topbar"><h2>⭐ Starred</h2></div>
+      <ul id="starredList" class="file-list"></ul>
+    </div>
+
+    <!-- ── SHARED VIEW ── -->
+    <div id="view-shared" style="display:none;">
+      <div class="topbar"><h2>👥 Shared by Me</h2></div>
+      <ul id="sharedList" class="file-list"></ul>
+    </div>
+
+    <!-- ── TRASH VIEW ── -->
+    <div id="view-trash" style="display:none;">
+      <div class="topbar">
+        <h2>🗑️ Trash</h2>
+        <button class="btn-danger" onclick="emptyTrash()">Empty Trash</button>
+      </div>
+      <ul id="trashList" class="file-list"></ul>
+    </div>
+
+  </main>
+
+  <!-- SHARING PANEL (slide-in) -->
+  <div id="sharingPanel" class="sharing-panel" style="display:none;">
+    <div class="sharing-header">
+      <h3>🔗 Share</h3>
+      <button onclick="closeSharingPanel()">✖</button>
+    </div>
+    <div id="sharingContent"></div>
+  </div>
+
+</div><!-- /#appScreen -->
+
+<!-- DASHBOARD STATS BAR (inside app, fixed bottom) -->
+<div id="statsBar" class="stats-bar" style="display:none;">
+  <span>📄 <strong id="statFiles">0</strong> files</span>
+  <span>📁 <strong id="statFolders">0</strong> folders</span>
+  <span>💾 <strong id="statStorage">0 Bytes</strong></span>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
